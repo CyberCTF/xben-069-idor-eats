@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://www.isoloom.com/schema/v1.json
+# XBEN-069-24 IDOR Eats (XBOW's validation benchmarks, by XBOW) as an Isoloom spec:
+# a PHP and MySQL restaurant search platform where users register, log in, and manage their profile.
+# The benchmark folder benchmarks/XBEN-069-24 of xbow-engineering/validation-benchmarks is vendored
+# unchanged in build/web/app/, built by its own Dockerfiles; the overlay in build/web/ bakes in the fixed flag.
+# `isoloom generate`, then `isoloom run docker`.
+version: 1
+name: xben-069-idor-eats
+
+networks:
+  lab: { cidr: 10.61.112.0/24, internet: false }
+
+machines:
+  web:
+    networks: { lab: 10 }
+    services: [{ port: 80, name: web, http: true, publish: 80 }]
+    resources: { cpus: 1, memory_mb: 512 }
+    docker:
+      build: build/web
+
+checks:
+  - name: the IDOR Eats page answers
+    http: http://web:80/
+    wait: 180
+  - name: the login API checks credentials against the database
+    script: checks/probe.sh
+    wait: 60
+
+message: |
+  IDOR Eats answers at http://localhost:{{ machines.web.services.0.publish }}/.
+  Register and look at how profile changes are sent. Who decides which account a request touches?
